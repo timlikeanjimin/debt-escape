@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-N4DJ43QWJH"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-N4DJ43QWJH');
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>대출 탈출 시뮬레이터 — 눈덩이 vs 눈사태 전략 비교</title>
+  <meta name="description" content="여러 대출을 입력하고 눈덩이(Snowball) vs 눈사태(Avalanche) 상환 전략을 나란히 비교하세요. 더 빨리, 더 적은 이자로 빚을 탈출하는 최적 전략을 찾아드립니다." />
+  <meta property="og:title" content="대출 탈출 시뮬레이터" />
+  <meta property="og:description" content="눈덩이 vs 눈사태 — 어떤 전략이 이자를 더 아낄까? 무가입 무료 계산" />
+  <meta property="og:type" content="website" />
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <style>
+    /* ── 리셋 & 기본 ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f0f4ff;
+      --card: #ffffff;
+      --primary: #3b6ef8;
+      --primary-dark: #2752d0;
+      --accent-snow: #3b9ef8;
+      --accent-aval: #f86b3b;
+      --text: #1a202c;
+      --muted: #718096;
+      --border: #e2e8f0;
+      --danger: #e53e3e;
+      --green: #38a169;
+      --radius: 12px;
+      --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    body { font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* ── 광고 슬롯 ── */
+    .ad-slot { background: #f7f7f7; border: 1px dashed #ccc; border-radius: 8px; text-align: center; color: #aaa; font-size: 12px; padding: 8px 0; margin: 0 auto; }
+    .ad-top { width: 100%; max-width: 728px; height: 90px; display: flex; align-items: center; justify-content: center; }
+    .ad-mid { width: 100%; max-width: 468px; height: 60px; display: flex; align-items: center; justify-content: center; }
+
+    /* ── 레이아웃 ── */
+    header { background: linear-gradient(135deg, #1e3a8a 0%, #3b6ef8 100%); color: #fff; padding: 20px 16px 16px; text-align: center; }
+    header h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.5px; }
+    header p { font-size: 0.9rem; opacity: 0.85; margin-top: 6px; }
+    .ad-wrapper { display: flex; justify-content: center; padding: 12px 16px 0; }
+
+    main { max-width: 860px; margin: 0 auto; padding: 20px 16px 60px; }
+
+    /* ── 카드 ── */
+    .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; margin-bottom: 18px; }
+    .card h2 { font-size: 1rem; font-weight: 700; color: var(--primary); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+
+    /* ── 폼 공통 ── */
+    label { font-size: 0.82rem; font-weight: 600; color: var(--muted); display: block; margin-bottom: 4px; }
+    input, select { width: 100%; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.95rem; color: var(--text); background: #fff; transition: border 0.15s; }
+    input:focus, select:focus { outline: none; border-color: var(--primary); }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+
+    /* ── 대출 행 ── */
+    #loan-list { display: flex; flex-direction: column; gap: 12px; }
+    .loan-row { border: 1.5px solid var(--border); border-radius: 10px; padding: 14px 14px 10px; position: relative; background: #fafbff; }
+    .loan-row-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .loan-row-header span { font-size: 0.85rem; font-weight: 700; color: var(--primary); }
+    .loan-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (max-width: 480px) { .loan-fields { grid-template-columns: 1fr; } }
+    .loan-fields .full { grid-column: 1 / -1; }
+
+    /* ── 버튼 ── */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 18px; border-radius: 8px; font-size: 0.9rem; font-weight: 700; cursor: pointer; border: none; transition: transform 0.1s, opacity 0.15s; }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-outline { background: #fff; color: var(--primary); border: 2px solid var(--primary); }
+    .btn-danger { background: #fff; color: var(--danger); border: 1.5px solid #fca5a5; font-size: 0.78rem; padding: 5px 10px; }
+    .btn-danger:hover { background: #fff5f5; }
+    .btn-add { background: #eff6ff; color: var(--primary); border: 1.5px dashed #93c5fd; font-size: 0.85rem; width: 100%; padding: 10px; margin-top: 4px; }
+    .btn-add:hover { background: #dbeafe; }
+
+    .action-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+    .btn-calc { padding: 13px 28px; font-size: 1rem; border-radius: 10px; flex: 1; min-width: 160px; }
+
+    /* ── 추가 상환 ── */
+    .extra-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 480px) { .extra-row { grid-template-columns: 1fr; } }
+
+    /* ── 결과 섹션 ── */
+    #result-section { display: none; }
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+    @media (max-width: 560px) { .compare-grid { grid-template-columns: 1fr; } }
+
+    .strategy-card { border-radius: 10px; padding: 16px; }
+    .strategy-card.snow { background: linear-gradient(135deg, #eff8ff, #dbeafe); border: 2px solid var(--accent-snow); }
+    .strategy-card.aval { background: linear-gradient(135deg, #fff7ed, #fed7aa); border: 2px solid var(--accent-aval); }
+    .strategy-title { font-size: 0.95rem; font-weight: 800; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+    .strategy-card.snow .strategy-title { color: var(--accent-snow); }
+    .strategy-card.aval .strategy-title { color: var(--accent-aval); }
+    .stat-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid rgba(0,0,0,0.06); font-size: 0.88rem; }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-label { color: var(--muted); }
+    .stat-value { font-weight: 700; }
+
+    /* ── 절감 배너 ── */
+    .saving-banner { background: linear-gradient(135deg, #f0fdf4, #dcfce7); border: 2px solid #86efac; border-radius: 10px; padding: 14px 18px; margin-bottom: 18px; text-align: center; }
+    .saving-banner .big { font-size: 1.6rem; font-weight: 900; color: var(--green); }
+    .saving-banner .desc { font-size: 0.85rem; color: #166534; margin-top: 4px; }
+
+    /* ── 차트 ── */
+    .chart-wrap { position: relative; width: 100%; height: 280px; }
+    @media (max-width: 600px) { .chart-wrap { height: 220px; } }
+
+    /* ── 상환 순서 ── */
+    .order-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 560px) { .order-grid { grid-template-columns: 1fr; } }
+    .order-list { list-style: none; }
+    .order-list li { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px dashed var(--border); font-size: 0.88rem; }
+    .order-list li:last-child { border-bottom: none; }
+    .order-badge { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; font-size: 0.75rem; font-weight: 800; flex-shrink: 0; }
+    .badge-snow { background: var(--accent-snow); color: #fff; }
+    .badge-aval { background: var(--accent-aval); color: #fff; }
+    .order-title { font-weight: 600; }
+    .order-title .muted { font-weight: 400; color: var(--muted); font-size: 0.8rem; margin-left: 4px; }
+
+    /* ── PRO 잠금 UI ── */
+    .pro-lock { position: relative; border-radius: 10px; overflow: hidden; }
+    .pro-overlay { position: absolute; inset: 0; background: rgba(240,244,255,0.92); backdrop-filter: blur(4px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; padding: 20px; z-index: 10; }
+    .pro-overlay .lock-icon { font-size: 2rem; }
+    .pro-overlay .lock-title { font-weight: 800; font-size: 1rem; color: var(--primary); }
+    .pro-overlay .lock-desc { font-size: 0.82rem; color: var(--muted); line-height: 1.4; }
+    .btn-pro { background: var(--primary); color: #fff; padding: 10px 22px; border-radius: 8px; font-weight: 700; font-size: 0.9rem; }
+
+    /* PRO 잠금 내용물 (흐릿하게) */
+    .pro-content { filter: blur(3px); pointer-events: none; user-select: none; padding: 16px; }
+    .fake-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .fake-table th, .fake-table td { padding: 6px 10px; border: 1px solid var(--border); text-align: right; }
+    .fake-table th { background: #f1f5ff; font-weight: 700; }
+    .fake-table td:first-child, .fake-table th:first-child { text-align: center; }
+
+    /* ── 푸터 ── */
+    footer { text-align: center; padding: 24px 16px; color: var(--muted); font-size: 0.78rem; background: #fff; border-top: 1px solid var(--border); margin-top: 20px; }
+    footer strong { color: var(--text); }
+
+    /* ── 유틸 ── */
+    .mt-8 { margin-top: 8px; }
+    .tip { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px; padding: 10px 12px; font-size: 0.82rem; color: #92400e; line-height: 1.5; margin-top: 12px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>💳 대출 탈출 시뮬레이터</h1>
+  <p>눈덩이 vs 눈사태 — 어떤 전략이 더 빨리, 더 적은 이자로 빚을 없앨까?</p>
+</header>
+
+<!-- 상단 광고 슬롯 -->
+<div class="ad-wrapper">
+  <div class="ad-slot ad-top"><!-- [광고 슬롯] 728×90 배너 광고 코드 삽입 --><span>광고 영역 728×90</span></div>
+</div>
+
+<main>
+
+  <!-- ── 1. 대출 목록 입력 ── -->
+  <div class="card">
+    <h2>📋 내 대출 목록 (최대 5개) <button class="btn" style="font-size:0.75rem;padding:4px 10px;background:#f0fdf4;color:#16a34a;border:1px solid #86efac;margin-left:6px;" onclick="fillExample()">예시 데이터 채우기</button></h2>
+    <div id="loan-list"></div>
+    <button class="btn btn-add mt-8" id="btn-add-loan" onclick="addLoan()">＋ 대출 추가</button>
+    <div id="loan-summary" style="display:none;background:#f0f4ff;border-radius:8px;padding:10px 14px;margin-top:10px;font-size:0.85rem;display:flex;gap:16px;flex-wrap:wrap;"></div>
+    <div class="tip">💡 <strong>최소 월 상환액</strong>은 매달 반드시 내야 하는 금액(원리금·최소결제액)이에요. 추가 상환은 아래에서 별도 입력합니다.</div>
+  </div>
+
+  <!-- ── 2. 추가 상환 여유자금 ── -->
+  <div class="card">
+    <h2>💰 월 추가 상환 여유자금</h2>
+    <div class="extra-row">
+      <div>
+        <label>월 추가 상환액 (원)</label>
+        <input type="number" id="extra-payment" placeholder="예) 300000" min="0" step="10000" />
+      </div>
+      <div>
+        <label>계산 시작월 (선택)</label>
+        <input type="month" id="start-month" />
+      </div>
+    </div>
+    <div class="tip mt-8">💡 대출 최소 상환액을 모두 낸 후 남는 여유자금을 입력하세요. 0원이면 최소 상환액만으로 계산합니다.</div>
+  </div>
+
+  <!-- ── 계산 버튼 ── -->
+  <div class="action-row">
+    <button class="btn btn-primary btn-calc" onclick="calculate()">🚀 전략 비교 계산</button>
+    <button class="btn btn-outline" onclick="resetAll()">↺ 초기화</button>
+  </div>
+
+  <!-- ── 3. 결과 섹션 ── -->
+  <div id="result-section">
+
+    <!-- 중간 광고 슬롯 -->
+    <div style="display:flex;justify-content:center;margin:18px 0 0;">
+      <div class="ad-slot ad-mid"><!-- [광고 슬롯] 468×60 광고 코드 삽입 --><span>광고 영역 468×60</span></div>
+    </div>
+
+    <!-- 절감 배너 -->
+    <div class="saving-banner" id="saving-banner" style="margin-top:18px;"></div>
+
+    <!-- 전략 비교 카드 -->
+    <div class="compare-grid">
+      <div class="strategy-card snow">
+        <div class="strategy-title">❄️ 눈덩이 전략</div>
+        <div id="snow-stats"></div>
+      </div>
+      <div class="strategy-card aval">
+        <div class="strategy-title">🔥 눈사태 전략</div>
+        <div id="aval-stats"></div>
+      </div>
+    </div>
+
+    <!-- 차트 -->
+    <div class="card">
+      <h2>📈 월별 총 잔액 감소 추이</h2>
+      <div class="chart-wrap">
+        <canvas id="debtChart"></canvas>
+      </div>
+    </div>
+
+    <!-- 상환 순서 -->
+    <div class="card" id="order-card">
+      <h2>🗂️ 대출 상환 순서</h2>
+      <div class="order-grid">
+        <div>
+          <div style="font-size:0.82rem;font-weight:700;color:var(--accent-snow);margin-bottom:8px;">❄️ 눈덩이 순서</div>
+          <ul class="order-list" id="snow-order"></ul>
+        </div>
+        <div>
+          <div style="font-size:0.82rem;font-weight:700;color:var(--accent-aval);margin-bottom:8px;">🔥 눈사태 순서</div>
+          <ul class="order-list" id="aval-order"></ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRO 잠금: 월별 상세 스케줄 -->
+    <div class="card">
+      <h2>📅 월별 상세 상환 스케줄 <span style="font-size:0.75rem;background:#eff6ff;color:var(--primary);padding:2px 8px;border-radius:20px;margin-left:6px;">PRO</span></h2>
+      <div class="pro-lock">
+        <div class="pro-overlay">
+          <div class="lock-icon">🔒</div>
+          <div class="lock-title">PRO 기능 — 월별 상환 스케줄</div>
+          <div class="lock-desc">대출별 월 상환액, 이자, 원금, 잔액을 월별로 정리한<br>표를 PDF로 저장할 수 있어요.</div>
+          <!-- 실제 결제 연동 전 placeholder -->
+          <button class="btn btn-pro" onclick="alert('결제 연동 준비 중입니다. 토스페이먼츠 또는 Stripe 연동 후 활성화됩니다.')">₩2,900 PDF 받기</button>
+        </div>
+        <div class="pro-content">
+          <table class="fake-table">
+            <thead><tr><th>월</th><th>눈덩이 잔액</th><th>이자</th><th>눈사태 잔액</th><th>이자</th></tr></thead>
+            <tbody id="fake-schedule">
+              <tr><td>1</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>
+              <tr><td>2</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>
+              <tr><td>3</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>
+              <tr><td>4</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>
+              <tr><td>5</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 이자율 낮은 대환대출 CTA -->
+    <div style="background:#1e3a8a;border-radius:12px;padding:18px 20px;color:#fff;text-align:center;margin-bottom:18px;">
+      <div style="font-size:1rem;font-weight:800;margin-bottom:6px;">💡 이자율이 높은 대출, 더 낮은 금리로 바꿀 수 있을까요?</div>
+      <div style="font-size:0.85rem;opacity:0.85;margin-bottom:12px;">대환대출 비교 서비스로 이자를 더 아껴보세요.</div>
+      <!-- 실제 제휴 링크로 교체 -->
+      <button class="btn" style="background:#fbbf24;color:#1e3a8a;font-weight:800;padding:10px 24px;" onclick="alert('제휴 대환대출 비교 서비스 링크를 여기에 연결하세요 (핀다, 뱅크샐러드 등 제휴)')">대환대출 비교하기 →</button>
+    </div>
+
+  </div><!-- /#result-section -->
+
+</main>
+
+<footer>
+  <strong>대출 탈출 시뮬레이터</strong> — 이 도구는 교육·참고용이며 금융 조언을 대체하지 않습니다.<br>
+  실제 이자·원금 계산은 대출 계약서를 기준으로 하세요.
+</footer>
+
+<script>
+// ── 상태 ──
+let loans = [];
+let loanCounter = 0;
+let debtChart = null;
+
+const LOAN_TYPES = ['신용대출', '마이너스통장', '자동차할부', '학자금대출', '카드론', '주택담보대출', '기타'];
+
+// ── 초기화 ──
+(function init() {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  document.getElementById('start-month').value = `${yyyy}-${mm}`;
+  addLoan();
+  addLoan();
+})();
+
+// ── 대출 추가 ──
+function addLoan() {
+  if (loans.length >= 5) {
+    alert('최대 5개까지 입력할 수 있습니다. PRO 버전에서는 10개까지 가능합니다.');
+    return;
+  }
+  loanCounter++;
+  const id = loanCounter;
+  loans.push(id);
+
+  const div = document.createElement('div');
+  div.className = 'loan-row';
+  div.id = `loan-row-${id}`;
+  div.innerHTML = `
+    <div class="loan-row-header">
+      <span>대출 ${loans.length}</span>
+      <button class="btn btn-danger" onclick="removeLoan(${id})">✕ 삭제</button>
+    </div>
+    <div class="loan-fields">
+      <div class="full">
+        <label>대출 종류</label>
+        <select id="type-${id}">
+          ${LOAN_TYPES.map(t => `<option>${t}</option>`).join('')}
+        </select>
+      </div>
+      <div class="full">
+        <label>대출 이름 (선택, 예: OO은행 신용대출)</label>
+        <input type="text" id="name-${id}" placeholder="비워두면 대출 종류로 표시" maxlength="20" />
+      </div>
+      <div>
+        <label>현재 잔액 (원)</label>
+        <input type="number" id="balance-${id}" placeholder="예) 15000000" min="1" step="100000" />
+      </div>
+      <div>
+        <label>연 이자율 (%)</label>
+        <input type="number" id="rate-${id}" placeholder="예) 4.5" min="0.1" max="50" step="0.1" />
+      </div>
+      <div>
+        <label>월 최소 상환액 (원)</label>
+        <input type="number" id="minpay-${id}" placeholder="예) 300000" min="0" step="10000" />
+      </div>
+    </div>
+  `;
+  document.getElementById('loan-list').appendChild(div);
+  // 실시간 요약 업데이트
+  [`balance-${id}`, `minpay-${id}`].forEach(sel => {
+    document.getElementById(sel)?.addEventListener('input', updateSummary);
+  });
+  updateAddButton();
+}
+
+// ── 대출 삭제 ──
+function removeLoan(id) {
+  if (loans.length <= 1) { alert('대출은 최소 1개 이상 입력해야 합니다.'); return; }
+  loans = loans.filter(l => l !== id);
+  document.getElementById(`loan-row-${id}`).remove();
+  // 순서 번호 갱신
+  document.querySelectorAll('.loan-row-header span').forEach((el, i) => { el.textContent = `대출 ${i + 1}`; });
+  updateAddButton();
+}
+
+function updateAddButton() {
+  document.getElementById('btn-add-loan').style.display = loans.length >= 5 ? 'none' : '';
+  updateSummary();
+}
+
+function updateSummary() {
+  let totalBalance = 0, totalMin = 0, validCount = 0;
+  for (const id of loans) {
+    const b = parseFloat(document.getElementById(`balance-${id}`)?.value) || 0;
+    const mp = parseFloat(document.getElementById(`minpay-${id}`)?.value) || 0;
+    if (b > 0) { totalBalance += b; validCount++; }
+    totalMin += mp;
+  }
+  const el = document.getElementById('loan-summary');
+  if (totalBalance > 0) {
+    el.style.display = 'flex';
+    el.innerHTML = `
+      <span>📊 총 대출 잔액: <strong>${formatKRW(totalBalance)}</strong></span>
+      <span>📅 최소 월 납부: <strong>${totalMin > 0 ? formatKRW(totalMin) : '미입력'}</strong></span>
+      <span>🏦 대출 수: <strong>${validCount}개</strong></span>
+    `;
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+// ── 입력값 읽기 ──
+function readLoans() {
+  const result = [];
+  for (const id of loans) {
+    const balance = parseFloat(document.getElementById(`balance-${id}`).value);
+    const rate = parseFloat(document.getElementById(`rate-${id}`).value);
+    const minpay = parseFloat(document.getElementById(`minpay-${id}`).value) || 0;
+    const name = document.getElementById(`name-${id}`).value.trim()
+      || document.getElementById(`type-${id}`).value;
+    if (isNaN(balance) || balance <= 0) { alert(`"${name}" 잔액을 입력해주세요.`); return null; }
+    if (isNaN(rate) || rate <= 0) { alert(`"${name}" 이자율을 입력해주세요.`); return null; }
+    result.push({ id, name, balance, rate, minpay });
+  }
+  return result;
+}
+
+// ── 시뮬레이션 엔진 ──
+// 핵심: 완납된 대출의 최소 상환액을 다음 달 추가 상환 풀에 편입 (진짜 눈덩이/눈사태 전략)
+function simulate(loansInput, extraPayment, strategy) {
+  // 깊은 복사
+  let state = loansInput.map(l => ({ ...l, remaining: l.balance }));
+
+  // 우선순위 순서 결정 (초기 잔액/이자율 기준 — 변하지 않음)
+  const sorted = strategy === 'snowball'
+    ? [...state].sort((a, b) => a.balance - b.balance)
+    : [...state].sort((a, b) => b.rate - a.rate);
+  const priorityOrder = sorted.map(l => l.id);
+
+  let monthsCount = 0;
+  let totalInterest = 0;
+  const schedule = [];
+  const MAX_MONTHS = 600; // 50년 안전 한도
+
+  while (true) {
+    if (state.every(l => l.remaining <= 0)) break;
+    if (monthsCount >= MAX_MONTHS) break;
+    monthsCount++;
+
+    // 1단계: 이자 부과 (이자를 잔액에 더함)
+    state.forEach(l => {
+      if (l.remaining <= 0) return;
+      const interest = l.remaining * (l.rate / 100 / 12);
+      l.remaining += interest;
+      totalInterest += interest;
+    });
+
+    // 2단계: 최소 상환 + 완납 대출 최소 상환액 회수 → extra 풀 편입
+    let availableExtra = extraPayment;
+    state.forEach(l => {
+      if (l.remaining <= 0) {
+        // 이미 완납된 대출: 최소 상환액 전액이 추가 상환 풀로 이동
+        availableExtra += l.minpay;
+        return;
+      }
+      const pay = Math.min(l.minpay, l.remaining);
+      l.remaining = Math.max(0, l.remaining - pay);
+    });
+
+    // 3단계: 추가 상환 — 우선순위 순서대로
+    for (const pid of priorityOrder) {
+      if (availableExtra <= 0.5) break; // 부동소수점 허용
+      const loan = state.find(l => l.id === pid);
+      if (!loan || loan.remaining <= 0.5) continue;
+      const pay = Math.min(availableExtra, loan.remaining);
+      loan.remaining = Math.max(0, loan.remaining - pay);
+      availableExtra -= pay;
+    }
+
+    const totalBalance = state.reduce((s, l) => s + Math.max(0, l.remaining), 0);
+    schedule.push({
+      month: monthsCount,
+      balancesByLoan: state.map(l => ({ id: l.id, remaining: Math.max(0, l.remaining) })),
+      totalBalance: Math.round(totalBalance),
+    });
+
+    if (totalBalance < 0.5) break;
+  }
+
+  return {
+    months: monthsCount,
+    totalInterest: Math.round(totalInterest),
+    schedule,
+    priorityOrder,
+  };
+}
+
+// ── 포맷 ──
+function formatKRW(n) {
+  if (n >= 1e8) return (n / 1e8).toFixed(1).replace(/\.0$/, '') + '억원';
+  if (n >= 1e4) return Math.round(n / 10000) + '만원';
+  return Math.round(n).toLocaleString() + '원';
+}
+function formatMonths(m) {
+  if (m <= 0) return '0개월';
+  const y = Math.floor(m / 12), mo = m % 12;
+  return (y > 0 ? y + '년 ' : '') + (mo > 0 ? mo + '개월' : '');
+}
+function monthLabel(startMonth, offset) {
+  const d = new Date(startMonth + '-01');
+  d.setMonth(d.getMonth() + offset);
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+// ── 계산 실행 ──
+function calculate() {
+  const loansData = readLoans();
+  if (!loansData) return;
+
+  const extra = parseFloat(document.getElementById('extra-payment').value) || 0;
+  const startMonth = document.getElementById('start-month').value || new Date().toISOString().slice(0, 7);
+
+  // 최소 상환이 이자보다 작은 대출 경고
+  const badLoans = loansData.filter(l => l.minpay > 0 && l.minpay < l.balance * (l.rate / 100 / 12));
+  if (badLoans.length > 0) {
+    const names = badLoans.map(l => `• ${l.name}: 월 이자 ${Math.round(l.balance * l.rate / 100 / 12).toLocaleString()}원 > 최소 상환 ${l.minpay.toLocaleString()}원`).join('\n');
+    const ok = confirm(`⚠️ 아래 대출은 최소 상환액이 월 이자보다 적어 원금이 줄지 않고 오히려 늘어납니다.\n\n${names}\n\n계속 계산할까요? (최소 상환액을 이자 이상으로 높이는 것을 권장합니다)`);
+    if (!ok) return;
+  }
+
+  // 추가 상환 + 최소 상환 합계가 총 이자보다 작으면 경고
+  const totalMinPay = loansData.reduce((s, l) => s + l.minpay, 0);
+  const totalMonthlyInterest = loansData.reduce((s, l) => s + l.balance * l.rate / 100 / 12, 0);
+  if (totalMinPay + extra < totalMonthlyInterest) {
+    alert(`⚠️ 월 총 납부액(${(totalMinPay + extra).toLocaleString()}원)이 총 이자(${Math.round(totalMonthlyInterest).toLocaleString()}원)보다 적어 대출이 줄지 않습니다.\n최소 상환액 또는 추가 상환액을 늘려주세요.`);
+    return;
+  }
+
+  const snow = simulate(loansData, extra, 'snowball');
+  const aval = simulate(loansData, extra, 'avalanche');
+
+  // 600개월 한도 도달 시 경고
+  if (snow.months >= 600 || aval.months >= 600) {
+    alert('⚠️ 계산 가능 한도(50년)를 초과했습니다.\n최소 상환액이나 추가 상환액을 늘려야 대출을 갚을 수 있습니다.');
+    return;
+  }
+
+  // 결과 섹션 표시
+  document.getElementById('result-section').style.display = 'block';
+  document.getElementById('result-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // ── 절감 배너 ──
+  const banner = document.getElementById('saving-banner');
+  const interestDiff = snow.totalInterest - aval.totalInterest;
+  const monthDiff = snow.months - aval.months;
+  if (Math.abs(interestDiff) < 1000 && Math.abs(monthDiff) < 1) {
+    banner.innerHTML = `<div class="big">두 전략의 차이가 거의 없어요 🎉</div><div class="desc">대출이 적거나 이자율 구조가 유사할 때 나타납니다.</div>`;
+  } else if (aval.totalInterest <= snow.totalInterest) {
+    banner.innerHTML = `<div class="big">눈사태 전략이 이자 ${formatKRW(Math.abs(interestDiff))} 절감! 🔥</div><div class="desc">눈덩이 대비 ${Math.abs(monthDiff) > 0 ? Math.abs(monthDiff) + '개월 더 빨리 ' : ''}완납하고 이자를 더 아낄 수 있어요.</div>`;
+  } else {
+    banner.innerHTML = `<div class="big">눈덩이 전략이 이자 ${formatKRW(Math.abs(interestDiff))} 절감! ❄️</div><div class="desc">눈사태 대비 ${Math.abs(monthDiff) > 0 ? Math.abs(monthDiff) + '개월 더 빨리 ' : ''}완납하고 이자를 더 아낄 수 있어요.</div>`;
+  }
+
+  // ── 전략 통계 ──
+  function renderStats(containerId, result, startMonth) {
+    const endLabel = monthLabel(startMonth, result.months);
+    document.getElementById(containerId).innerHTML = `
+      <div class="stat-row"><span class="stat-label">완납 예상</span><span class="stat-value">${endLabel}</span></div>
+      <div class="stat-row"><span class="stat-label">소요 기간</span><span class="stat-value">${formatMonths(result.months)}</span></div>
+      <div class="stat-row"><span class="stat-label">총 납부 이자</span><span class="stat-value">${formatKRW(result.totalInterest)}</span></div>
+      <div class="stat-row"><span class="stat-label">총 상환액</span><span class="stat-value">${formatKRW(loansData.reduce((s, l) => s + l.balance, 0) + result.totalInterest)}</span></div>
+    `;
+  }
+  renderStats('snow-stats', snow, startMonth);
+  renderStats('aval-stats', aval, startMonth);
+
+  // ── 차트 ──
+  const maxMonths = Math.max(snow.months, aval.months);
+  // 레이블: 매 6개월(36개월+) / 3개월(12개월+) / 1개월 간격, 마지막 포인트 항상 포함
+  const step = maxMonths > 36 ? 6 : maxMonths > 12 ? 3 : 1;
+  const chartPoints = [];
+  for (let i = 0; i <= maxMonths; i += step) chartPoints.push(i);
+  if (chartPoints[chartPoints.length - 1] !== maxMonths) chartPoints.push(maxMonths);
+  const labels = chartPoints.map(i => monthLabel(startMonth, i));
+
+  function getBalanceAt(schedule, m) {
+    if (m === 0) return loansData.reduce((s, l) => s + l.balance, 0);
+    const entry = schedule.find(e => e.month === m);
+    if (entry) return entry.totalBalance;
+    // m이 완납 이후면 0 반환
+    if (m >= schedule.length && schedule.length > 0) return 0;
+    return schedule[schedule.length - 1]?.totalBalance ?? 0;
+  }
+
+  const snowData = chartPoints.map(i => Math.round(getBalanceAt(snow.schedule, i) / 10000));
+  const avalData = chartPoints.map(i => Math.round(getBalanceAt(aval.schedule, i) / 10000));
+
+  if (debtChart) debtChart.destroy();
+  const ctx = document.getElementById('debtChart').getContext('2d');
+  debtChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: '❄️ 눈덩이',
+          data: snowData,
+          borderColor: '#3b9ef8',
+          backgroundColor: 'rgba(59,158,248,0.08)',
+          borderWidth: 2.5,
+          pointRadius: 3,
+          tension: 0.3,
+          fill: true,
+        },
+        {
+          label: '🔥 눈사태',
+          data: avalData,
+          borderColor: '#f86b3b',
+          backgroundColor: 'rgba(248,107,59,0.08)',
+          borderWidth: 2.5,
+          pointRadius: 3,
+          tension: 0.3,
+          fill: true,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'top', labels: { font: { size: 12 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}만원`,
+          },
+        },
+      },
+      scales: {
+        y: {
+          title: { display: true, text: '잔액 (만원)', font: { size: 11 } },
+          ticks: {
+            callback: v => v.toLocaleString() + '만',
+            font: { size: 11 },
+          },
+        },
+        x: { ticks: { font: { size: 10 }, maxRotation: 45 } },
+      },
+    },
+  });
+
+  // ── 상환 순서 ──
+  function renderOrder(ulId, priorityOrder, badgeClass) {
+    const ul = document.getElementById(ulId);
+    ul.innerHTML = '';
+    priorityOrder.forEach((pid, i) => {
+      const loan = loansData.find(l => l.id === pid);
+      if (!loan) return;
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <span class="order-badge ${badgeClass}">${i + 1}</span>
+        <span class="order-title">${loan.name}<span class="muted">(${loan.rate}% · ${formatKRW(loan.balance)})</span></span>
+      `;
+      ul.appendChild(li);
+    });
+  }
+  renderOrder('snow-order', snow.priorityOrder, 'badge-snow');
+  renderOrder('aval-order', aval.priorityOrder, 'badge-aval');
+
+  // PRO 잠금 내 가짜 스케줄에 실제 데이터 대략 채우기 (흐릿하게 보일 숫자만)
+  const fakeTbody = document.getElementById('fake-schedule');
+  fakeTbody.innerHTML = '';
+  for (let m = 1; m <= 5; m++) {
+    const sEntry = snow.schedule.find(e => e.month === m);
+    const aEntry = aval.schedule.find(e => e.month === m);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${m}</td><td>${sEntry ? formatKRW(sEntry.totalBalance) : '-'}</td><td>-</td><td>${aEntry ? formatKRW(aEntry.totalBalance) : '-'}</td><td>-</td>`;
+    fakeTbody.appendChild(tr);
+  }
+}
+
+// ── 예시 데이터 채우기 ──
+function fillExample() {
+  loans = [];
+  loanCounter = 0;
+  document.getElementById('loan-list').innerHTML = '';
+  if (debtChart) { debtChart.destroy(); debtChart = null; }
+  document.getElementById('result-section').style.display = 'none';
+
+  const examples = [
+    { type: '신용대출', name: 'OO은행 신용대출', balance: 15000000, rate: 6.5, minpay: 350000 },
+    { type: '카드론',   name: '카드사 장기카드대출', balance: 5000000, rate: 14.9, minpay: 200000 },
+    { type: '학자금대출', name: '한국장학재단 대출', balance: 8000000, rate: 1.7, minpay: 120000 },
+  ];
+
+  examples.forEach(ex => {
+    addLoan();
+    const id = loanCounter;
+    document.getElementById(`type-${id}`).value = ex.type;
+    document.getElementById(`name-${id}`).value = ex.name;
+    document.getElementById(`balance-${id}`).value = ex.balance;
+    document.getElementById(`rate-${id}`).value = ex.rate;
+    document.getElementById(`minpay-${id}`).value = ex.minpay;
+  });
+  document.getElementById('extra-payment').value = 200000;
+  updateSummary();
+}
+
+// ── 초기화 ──
+function resetAll() {
+  if (!confirm('입력 내용을 모두 초기화할까요?')) return;
+  loans = [];
+  loanCounter = 0;
+  document.getElementById('loan-list').innerHTML = '';
+  document.getElementById('extra-payment').value = '';
+  document.getElementById('result-section').style.display = 'none';
+  if (debtChart) { debtChart.destroy(); debtChart = null; }
+  addLoan();
+  addLoan();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
